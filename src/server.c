@@ -1,4 +1,5 @@
 #include "server.h"
+#include "store.h"
 
 uv_loop_t *serverLoop;
 
