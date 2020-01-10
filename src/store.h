@@ -11,7 +11,7 @@ map_t store;
 int put(char* key, any_t value);
 int get(char* key, any_t *arg);
 int remove(char* key);
-int length(char* key);
+int length();
 
 
 #endif /* K_STORAGER_SRC_STORE_H_ */
