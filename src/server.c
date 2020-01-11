@@ -1,5 +1,9 @@
-#include "server.h"
 #include "store.h"
+#include "server.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "cJSON.h"
 
 uv_loop_t *serverLoop;
 
@@ -27,11 +31,40 @@ void echo_write(uv_write_t *req, int status) {
 
 void echo_read(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf) {
     if (nread > 0) {
-        write_req_t *req = (write_req_t*) malloc(sizeof(write_req_t));
-        req->buf = uv_buf_init(buf->base, nread);
-        fwrite(buf->base, 30, 1, stdout);
-        printf("\n");
-        uv_write((uv_write_t*) req, client, &req->buf, 1, echo_write);
+        uv_write_t* w_req = (uv_write_t*)malloc(sizeof(uv_write_t));
+        cJSON *json = cJSON_Parse(buf->base);
+        printf("Hi %s\n", cJSON_Print(json));
+        cJSON *type = cJSON_GetObjectItemCaseSensitive(json, "type");
+        cJSON *key = cJSON_GetObjectItemCaseSensitive(json, "key");
+        cJSON *value = cJSON_GetObjectItemCaseSensitive(json, "value");
+        if (cJSON_IsString(type) == FALSE || (type->valuestring == NULL)) {
+            fprintf(stderr, "check type failed %s\n", type->valuestring);
+        }
+        // if (cJSON_IsString(key) == FALSE || (key->valuestring == NULL)) {
+        //     fprintf(stderr, "check key failed %s\n", key->valuestring);
+        // }
+        // if (cJSON_IsString(value) == FALSE || (value->valuestring == NULL)) {
+        //     fprintf(stderr, "check value failed %s\n", value->valuestring);
+        // }
+        if (strcmp(type->valuestring, "set") == 0) {
+            int error = store_put(key->valuestring, value->valuestring);
+            char status[10] = "fail";
+            if (error == 0) {
+                strcpy(status, "success");
+            }
+            uv_buf_t write_buf = uv_buf_init(status, strlen(status));
+            uv_write((uv_write_t*) w_req, client, &write_buf, 1, echo_write);
+            return;
+        } else if (strcmp(type->valuestring, "get") == 0) {
+            char *resp_body = "";
+            int error = hashmap_get(store, key->valuestring, (void**)(&resp_body));
+            printf("get data: %s\n", resp_body);
+            uv_buf_t write_buf = uv_buf_init(resp_body, strlen(resp_body));
+            uv_write((uv_write_t*) w_req, client, &write_buf, 1, echo_write);
+            return;
+        }
+        uv_buf_t write_buf = uv_buf_init(buf->base, nread);
+        uv_write((uv_write_t*) w_req, client, &write_buf, 1, echo_write);
         return;
     }
     if (nread < 0) {
@@ -77,6 +110,7 @@ int server_listen(uv_loop_t *loop, int port) {
     fprintf(stderr, "Listen error %s\n", uv_strerror(status));
     return 1;
   }
+  store_init();
   fprintf(stdout, "Start TCP Server for port: %d\n", port);
   return uv_run(loop, UV_RUN_DEFAULT);
 }

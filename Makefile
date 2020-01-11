@@ -1,7 +1,7 @@
 GXX = gcc
 OUT_NAME = k-storager
 DEPS_PATH = deps/libuv/.libs/libuv.a
-SRC_PATH = src/k_storager.c src/server.c
+SRC_PATH = src/hashmap.c src/cJSON.c src/store.c src/server.c src/k_storager.c
 
 install: install-deps
 	@cp -r ./k-storager /usr/local/bin/k-storager

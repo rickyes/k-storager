@@ -1,17 +1,22 @@
 #include "store.h"
 
-int put(char* key, any_t value) {
+void store_init() {
+  store = hashmap_new();
+}
+
+int store_put(char* key, char* value) {
+  printf("set %s %s\n", key, value);
   return hashmap_put(store, key, value);
 }
 
-int get(char* key, any_t *arg) {
-  return hashmap_get(store, key, (void**)(&arg));
+int store_get(char* key, char args[]) {
+  return hashmap_get(store, key, (void**)(&args));
 }
 
-int remove(char* key) {
+int store_remove(char* key) {
   return hashmap_remove(store, key);
 }
 
-int length() {
+int store_length() {
   return hashmap_length(store);
 }
